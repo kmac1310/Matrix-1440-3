@@ -1,98 +1,132 @@
-import React, { useEffect, useRef, useState } from 'react';
-
-const MatrixRain = () => {
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
-  const dropsRef = useRef([]);
-  const [time, setTime] = useState('');
-
-  useEffect(() => {
-    // Time update effect
-    const updateTime = () => {
-      const options = { 
-        timeZone: 'America/New_York',
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit'
-      };
-      const NYTime = new Date().toLocaleTimeString('en-US', options);
-      setTime(NYTime);
-    };
-
-    // Update time immediately and set interval
-    updateTime();
-    const timeInterval = setInterval(updateTime, 1000);
-
-    // Canvas and Matrix rain effect
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const matrixChars = '1440';
-    const fontSize = 20;
-    let drops = [];
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      const columns = Math.floor(canvas.width / fontSize);
-      drops = Array(columns).fill().map(() => Math.random() * canvas.height);
-      dropsRef.current = drops;
-    };
-
-    const drawMatrix = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      ctx.font = `${fontSize}px monospace`;
-      
-      dropsRef.current.forEach((drop, i) => {
-        const char = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
-        const color = Math.random() < 0.8 ? '#00FF41' : '#007FFF';
-        const alpha = Math.random() * 0.5 + 0.5;
-        
-        ctx.fillStyle = color;
-        ctx.globalAlpha = alpha;
-        ctx.fillText(char, i * fontSize, drop * fontSize);
-        
-        if (drop * fontSize > canvas.height && Math.random() > 0.975) {
-          dropsRef.current[i] = 0;
-        } else {
-          dropsRef.current[i]++;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Digital Rain with NY Time</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            font-family: monospace;
         }
-      });
-      
-      animationRef.current = requestAnimationFrame(drawMatrix);
-    };
 
-    // Initialize
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    drawMatrix();
+        .matrix-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
 
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      clearInterval(timeInterval);
-    };
-  }, []);
+        #matrix-bg {
+            display: block;
+        }
 
-  return (
-    <div className="fixed inset-0 z-0 bg-black overflow-hidden">
-      <canvas 
-        ref={canvasRef}
-        className="block"
-        style={{ background: 'black' }}
-      />
-      {/* Time Display */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        <div className="text-[#00FF41] font-mono text-8xl font-bold bg-black bg-opacity-50 p-8 rounded-lg">
-          {time}
-        </div>
-      </div>
+        .time-display {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00FF41;
+            font-size: 8rem;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            z-index: 1;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-wrapper">
+        <canvas id="matrix-bg"></canvas>
     </div>
-  );
-};
+    <div id="time" class="time-display"></div>
 
-export default MatrixRain;
+    <script>
+        // Time Display Function
+        function updateTime() {
+            const options = { 
+                timeZone: 'America/New_York',
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            const NYTime = new Date().toLocaleTimeString('en-US', options);
+            document.getElementById('time').textContent = NYTime;
+        }
+
+        // Update time immediately and set interval
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Matrix Rain Effect
+        (function() {
+            const canvas = document.getElementById('matrix-bg');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to fill the window
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            // Initialize canvas size and add resize listener
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Matrix characters
+            const matrixChars = '1440';
+            const drops = [];
+            const fontSize = 20;
+            const columns = Math.floor(canvas.width / fontSize);
+
+            // Initialize drops
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.random() * canvas.height;
+            }
+
+            function drawMatrix() {
+                // Semi-transparent black to create trail effect
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Set the text style
+                ctx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    // Random character from matrix chars
+                    const char = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+                    
+                    // Randomly choose color between Matrix green and blue
+                    const color = Math.random() < 0.8 ? '#00FF41' : '#007FFF';
+                    const alpha = Math.random() * 0.5 + 0.5; // Dynamic opacity
+                    
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = alpha;
+                    
+                    // Draw the character
+                    ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+                    // Reset drop back to top with random delay when it reaches bottom
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+
+                    // Move drop down
+                    drops[i]++;
+                }
+
+                requestAnimationFrame(drawMatrix);
+            }
+
+            // Start the Matrix rain
+            drawMatrix();
+        })();
+    </script>
+</body>
+</html>
