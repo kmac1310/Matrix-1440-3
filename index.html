@@ -1,0 +1,98 @@
+import React, { useEffect, useRef, useState } from 'react';
+
+const MatrixRain = () => {
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const dropsRef = useRef([]);
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    // Time update effect
+    const updateTime = () => {
+      const options = { 
+        timeZone: 'America/New_York',
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      const NYTime = new Date().toLocaleTimeString('en-US', options);
+      setTime(NYTime);
+    };
+
+    // Update time immediately and set interval
+    updateTime();
+    const timeInterval = setInterval(updateTime, 1000);
+
+    // Canvas and Matrix rain effect
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const matrixChars = '1440';
+    const fontSize = 20;
+    let drops = [];
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const columns = Math.floor(canvas.width / fontSize);
+      drops = Array(columns).fill().map(() => Math.random() * canvas.height);
+      dropsRef.current = drops;
+    };
+
+    const drawMatrix = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.font = `${fontSize}px monospace`;
+      
+      dropsRef.current.forEach((drop, i) => {
+        const char = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+        const color = Math.random() < 0.8 ? '#00FF41' : '#007FFF';
+        const alpha = Math.random() * 0.5 + 0.5;
+        
+        ctx.fillStyle = color;
+        ctx.globalAlpha = alpha;
+        ctx.fillText(char, i * fontSize, drop * fontSize);
+        
+        if (drop * fontSize > canvas.height && Math.random() > 0.975) {
+          dropsRef.current[i] = 0;
+        } else {
+          dropsRef.current[i]++;
+        }
+      });
+      
+      animationRef.current = requestAnimationFrame(drawMatrix);
+    };
+
+    // Initialize
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    drawMatrix();
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      clearInterval(timeInterval);
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-0 bg-black overflow-hidden">
+      <canvas 
+        ref={canvasRef}
+        className="block"
+        style={{ background: 'black' }}
+      />
+      {/* Time Display */}
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="text-[#00FF41] font-mono text-8xl font-bold bg-black bg-opacity-50 p-8 rounded-lg">
+          {time}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MatrixRain;
